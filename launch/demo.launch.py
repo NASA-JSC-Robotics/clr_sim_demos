@@ -93,6 +93,23 @@ def generate_launch_description():
                 {"wait_for_prompt": LaunchConfiguration("wait_for_prompt")},
                 {"scaling_factor": LaunchConfiguration("scaling_factor")},
             ],
+        ),
+        Node(
+            package="color_blob_centroid",
+            executable="ColorBlobCentroid",
+            output="screen",
+            parameters=[
+                {
+                    "prefix": "wrist_mounted_camera_color",
+                    "mock_hardware": False,
+                    "show_image": False,
+                    "debug": False,
+                    "continuous_output": False,
+                    "color_img_topic": "color",
+                    "depth_img_topic": "depth",
+                    "cam_info_topic": "camera_info",
+                }
+            ],
         )
     ]
 

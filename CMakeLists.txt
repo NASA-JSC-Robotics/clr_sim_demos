@@ -16,6 +16,8 @@ find_package(moveit_ros_planning_interface REQUIRED)
 find_package(moveit_msgs REQUIRED)
 find_package(moveit_visual_tools REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(dex_ivr_interfaces REQUIRED)
+find_package(color_blob_centroid REQUIRED)
 
 set(dependencies
   rclcpp
@@ -23,6 +25,8 @@ set(dependencies
   moveit_visual_tools
   moveit_msgs
   tf2
+  dex_ivr_interfaces
+  color_blob_centroid
 )
 
 add_executable(run_demo src/run_demo.cpp)

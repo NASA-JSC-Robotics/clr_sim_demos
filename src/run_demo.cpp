@@ -23,6 +23,8 @@
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <thread>
 
+#include "dex_ivr_interfaces/srv/blob_centroid.hpp"
+
 using namespace std::placeholders;
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("demo_exec");
 
@@ -73,6 +75,13 @@ public:
   RunDemoNode(rclcpp::NodeOptions node_options)
       : Node("demo_exec", node_options) {
     this->parameter_setup();
+    color_blob_client = this->create_client<dex_ivr_interfaces::srv::BlobCentroid>("color_blob_find");
+    while (!color_blob_client->wait_for_service(std::chrono::seconds(1))) {
+      if (!rclcpp::ok()) {
+        RCLCPP_ERROR(LOGGER, "Interrupted while waiting for the service.");
+      }
+      RCLCPP_INFO(LOGGER, "service not available, waiting again...");
+    }
   }
 
   void run_demo() {
@@ -80,7 +89,7 @@ public:
       RCLCPP_ERROR(LOGGER, "Failed to reach initial pose. Exiting.");
       return;
     }
-    if (!this->approach_ctb()) {
+    if (!this->approach_ctb_blob()) {
       RCLCPP_ERROR(LOGGER, "Failed to reach CTB. Exiting.");
       return;
     }
@@ -104,6 +113,20 @@ public:
                                     0.699, "clr", false);
     approach_wp.planner = "geometric::RRTstar";
     return plan_and_execute(approach_wp);
+  }
+
+  bool approach_ctb_blob() {
+    auto request = std::make_shared<dex_ivr_interfaces::srv::BlobCentroid::Request>();
+    request->color = "purple";
+    auto result = color_blob_client->async_send_request(request);
+    // Wait for the result.
+    if (rclcpp::spin_until_future_complete(shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS){
+      Waypoint blob_wp = Waypoint(0.821, 0.755, 0.898, 0.998, -0.037, 0.023,
+                                    -0.048, "clr", false);
+      return plan_and_execute(blob_wp);
+    } else {
+      return false;
+    }
   }
 
   bool approach_ctb() {
@@ -174,6 +197,7 @@ public:
   float scaling;
   std::unique_ptr<moveit::planning_interface::MoveGroupInterface> move_group;
   std::unique_ptr<moveit_visual_tools::MoveItVisualTools> moveit_viz;
+  rclcpp::Client<dex_ivr_interfaces::srv::BlobCentroid>::SharedPtr color_blob_client;
 
 private:
   geometry_msgs::msg::Pose
