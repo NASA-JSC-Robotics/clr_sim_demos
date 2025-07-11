@@ -96,6 +96,7 @@ public:
     while (!color_blob_client->wait_for_service(std::chrono::seconds(1))) {
       if (!rclcpp::ok()) {
         RCLCPP_ERROR(LOGGER, "Interrupted while waiting for the service.");
+        return;
       }
       RCLCPP_INFO(LOGGER, "service not available, waiting again...");
     }
