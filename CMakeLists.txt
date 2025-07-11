@@ -16,6 +16,7 @@ find_package(moveit_ros_planning_interface REQUIRED)
 find_package(moveit_msgs REQUIRED)
 find_package(moveit_visual_tools REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 find_package(dex_ivr_interfaces REQUIRED)
 find_package(color_blob_centroid REQUIRED)
 
@@ -25,6 +26,7 @@ set(dependencies
   moveit_visual_tools
   moveit_msgs
   tf2
+  tf2_geometry_msgs
   dex_ivr_interfaces
   color_blob_centroid
 )

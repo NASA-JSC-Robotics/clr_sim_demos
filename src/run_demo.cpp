@@ -23,7 +23,12 @@
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <thread>
 
+#include "geometry_msgs/msg/transform_stamped.hpp"
+#include "geometry_msgs/msg/pose.hpp"
 #include "dex_ivr_interfaces/srv/blob_centroid.hpp"
+#include "tf2_ros/transform_listener.h"
+#include "tf2_ros/buffer.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 
 using namespace std::placeholders;
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("demo_exec");
@@ -92,6 +97,9 @@ public:
       }
       RCLCPP_INFO(LOGGER, "service not available, waiting again...");
     }
+    tf_buffer = std::make_unique<tf2_ros::Buffer>(this->get_clock(), tf2::Duration(1000));
+    tf_listener =
+      std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
   }
 
   void run_demo() {
@@ -141,14 +149,23 @@ public:
     }
     auto response = future.get();
     if (response->centroid_pose.header.frame_id != ""){
-      auto pose = response->centroid_pose.pose;
       RCLCPP_INFO(LOGGER, "Blob frame id: %s", response->centroid_pose.header.frame_id.c_str());
-      Waypoint blob_wp = Waypoint(pose, "chonkur_grasp", false);
-      return plan_and_execute(blob_wp);
     } else {
       RCLCPP_ERROR(LOGGER, "Failed to find color blob.");
       return false;
     }
+
+    geometry_msgs::msg::Pose local_pose = response->centroid_pose.pose;
+    geometry_msgs::msg::TransformStamped transform;
+    geometry_msgs::msg::Pose global_pose;
+    bool success = this->get_global_transform(response->centroid_pose.header.frame_id, transform);
+    if (!success){
+      return false;
+    }
+    tf2::doTransform(local_pose, global_pose, transform);
+
+    Waypoint blob_wp = Waypoint(global_pose, "chonkur_grasp", false);
+    return plan_and_execute(blob_wp);
   }
 
   bool close_grasp() {
@@ -208,8 +225,22 @@ public:
   std::unique_ptr<moveit::planning_interface::MoveGroupInterface> move_group;
   std::unique_ptr<moveit_visual_tools::MoveItVisualTools> moveit_viz;
   rclcpp::Client<dex_ivr_interfaces::srv::BlobCentroid>::SharedPtr color_blob_client;
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener;
 
 private:
+  bool get_global_transform(const std::string &frame_id, geometry_msgs::msg::TransformStamped &t) {
+    try {
+      t = this->tf_buffer->lookupTransform(frame_id, move_group->getPlanningFrame(), tf2::TimePointZero, std::chrono::nanoseconds(5000));
+    } catch (const tf2::TransformException & ex) {
+      RCLCPP_INFO(
+        this->get_logger(), "Could not transform %s to %s: %s",
+        frame_id.c_str(), move_group->getPlanningFrame().c_str(), ex.what());
+      return false;
+    }
+    return true;
+  }
+
   geometry_msgs::msg::Pose
   relative_to_global(const geometry_msgs::msg::Pose &start_pose,
                      const geometry_msgs::msg::Pose &end_pose) {
