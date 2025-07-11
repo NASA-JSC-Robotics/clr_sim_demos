@@ -129,7 +129,7 @@ public:
   bool init() {
     Waypoint approach_wp = Waypoint(-1.728, 0.135, 0.778, -0.714, 0.012, -0.042,
                                     0.699, "clr", false);
-    approach_wp.planner = "geometric::RRTstar";
+    approach_wp.planner = "RRTstarkConfigDefault";
     return plan_and_execute(approach_wp);
   }
 
