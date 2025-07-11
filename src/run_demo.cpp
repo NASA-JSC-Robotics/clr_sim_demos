@@ -118,13 +118,18 @@ public:
   bool approach_ctb_blob() {
     auto request = std::make_shared<dex_ivr_interfaces::srv::BlobCentroid::Request>();
     request->color = "purple";
-    auto result = color_blob_client->async_send_request(request);
+    auto future = color_blob_client->async_send_request(request);
     // Wait for the result.
-    if (rclcpp::spin_until_future_complete(shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS){
+    while (future.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready){
+      RCLCPP_INFO_THROTTLE(LOGGER, *this->get_clock(), 1000, "Waiting for color blob response...");
+    }
+    auto response = future.get();
+    if (response->centroid_pose.header.frame_id != ""){
       Waypoint blob_wp = Waypoint(0.821, 0.755, 0.898, 0.998, -0.037, 0.023,
                                     -0.048, "clr", false);
       return plan_and_execute(blob_wp);
     } else {
+      RCLCPP_ERROR(LOGGER, "Failed to find color blob.");
       return false;
     }
   }
