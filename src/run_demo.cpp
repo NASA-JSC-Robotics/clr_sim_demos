@@ -39,6 +39,16 @@ struct Waypoint {
   std::string preset_name;
   std::string planner = "default";
 
+  /* Constructor for waypoints with geometry_msgs::msg::Pose. */
+  Waypoint(geometry_msgs::msg::Pose wp_pose,
+           std::string group, bool cartesian, bool relative = false) {
+    is_preset = false;
+    pose = wp_pose;
+    planning_group = group;
+    plan_cartesian = cartesian;
+    is_relative = relative;
+  }
+
   /* Constructor for waypoints with pose information. */
   Waypoint(float x, float y, float z, float qx, float qy, float qz, float qw,
            std::string group, bool cartesian, bool relative = false) {
@@ -89,7 +99,7 @@ public:
       RCLCPP_ERROR(LOGGER, "Failed to reach initial pose. Exiting.");
       return;
     }
-    if (!this->approach_ctb_blob()) {
+    if (!this->approach_ctb()) {
       RCLCPP_ERROR(LOGGER, "Failed to reach CTB. Exiting.");
       return;
     }
@@ -115,25 +125,6 @@ public:
     return plan_and_execute(approach_wp);
   }
 
-  bool approach_ctb_blob() {
-    auto request = std::make_shared<dex_ivr_interfaces::srv::BlobCentroid::Request>();
-    request->color = "purple";
-    auto future = color_blob_client->async_send_request(request);
-    // Wait for the result.
-    while (future.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready){
-      RCLCPP_INFO_THROTTLE(LOGGER, *this->get_clock(), 1000, "Waiting for color blob response...");
-    }
-    auto response = future.get();
-    if (response->centroid_pose.header.frame_id != ""){
-      Waypoint blob_wp = Waypoint(0.821, 0.755, 0.898, 0.998, -0.037, 0.023,
-                                    -0.048, "clr", false);
-      return plan_and_execute(blob_wp);
-    } else {
-      RCLCPP_ERROR(LOGGER, "Failed to find color blob.");
-      return false;
-    }
-  }
-
   bool approach_ctb() {
     Waypoint approach_wp = Waypoint(0.821, 0.755, 0.898, 0.998, -0.037, 0.023,
                                     -0.048, "clr", false);
@@ -141,9 +132,23 @@ public:
   }
 
   bool approach_ctb_handle() {
-    Waypoint approach_wp = Waypoint(0.0, 0.0, 0.16, 0.0, 0.0, 0.0, 1.0,
-                                    "ur_manipulator", true, true);
-    return plan_and_execute(approach_wp);
+    auto request = std::make_shared<dex_ivr_interfaces::srv::BlobCentroid::Request>();
+    request->color = "red";
+    auto future = color_blob_client->async_send_request(request);
+    // Wait for the result.
+    while (future.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready){
+      RCLCPP_INFO_THROTTLE(LOGGER, *this->get_clock(), 1000, "Waiting for color blob response...");
+    }
+    auto response = future.get();
+    if (response->centroid_pose.header.frame_id != ""){
+      auto pose = response->centroid_pose.pose;
+      RCLCPP_INFO(LOGGER, "Blob frame id: %s", response->centroid_pose.header.frame_id.c_str());
+      Waypoint blob_wp = Waypoint(pose, "chonkur_grasp", false);
+      return plan_and_execute(blob_wp);
+    } else {
+      RCLCPP_ERROR(LOGGER, "Failed to find color blob.");
+      return false;
+    }
   }
 
   bool close_grasp() {
