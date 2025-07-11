@@ -143,6 +143,7 @@ public:
   }
 
   bool approach_ctb_handle() {
+    // Find red blob in wrist camera image
     auto request =
         std::make_shared<dex_ivr_interfaces::srv::BlobCentroid::Request>();
     request->color = "red";
@@ -162,6 +163,7 @@ public:
       return false;
     }
 
+    // Transform waypoint from camera frame to planning frame
     geometry_msgs::msg::Pose local_pose = response->centroid_pose.pose;
     geometry_msgs::msg::TransformStamped transform;
     geometry_msgs::msg::Pose global_pose;
