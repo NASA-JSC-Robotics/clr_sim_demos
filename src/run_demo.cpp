@@ -164,7 +164,12 @@ public:
     }
     tf2::doTransform(local_pose, global_pose, transform);
 
-    Waypoint blob_wp = Waypoint(global_pose, "chonkur_grasp", false);
+    // Add offset to place grasp frame below the CTB handle
+    geometry_msgs::msg::Pose offset;
+    offset.position.z = 0.04;
+    global_pose = this->relative_to_global(global_pose, offset);
+
+    Waypoint blob_wp = Waypoint(global_pose, "chonkur_grasp", true);
     return plan_and_execute(blob_wp);
   }
 
@@ -231,10 +236,10 @@ public:
 private:
   bool get_global_transform(const std::string &frame_id, geometry_msgs::msg::TransformStamped &t) {
     try {
-      t = this->tf_buffer->lookupTransform(frame_id, move_group->getPlanningFrame(), tf2::TimePointZero, std::chrono::nanoseconds(5000));
+      t = this->tf_buffer->lookupTransform(move_group->getPlanningFrame(), frame_id, tf2::TimePointZero, std::chrono::nanoseconds(5000));
     } catch (const tf2::TransformException & ex) {
       RCLCPP_INFO(
-        this->get_logger(), "Could not transform %s to %s: %s",
+        this->get_logger(), "Could not get transform from %s to %s: %s",
         frame_id.c_str(), move_group->getPlanningFrame().c_str(), ex.what());
       return false;
     }

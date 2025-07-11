@@ -108,6 +108,7 @@ def generate_launch_description():
                     "color_img_topic": "color",
                     "depth_img_topic": "depth",
                     "cam_info_topic": "camera_info",
+                    "use_sim_time": LaunchConfiguration("use_sim_time"),
                 }
             ],
         )
