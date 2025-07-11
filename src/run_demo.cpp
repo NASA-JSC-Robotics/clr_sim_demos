@@ -23,12 +23,12 @@
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <thread>
 
-#include "geometry_msgs/msg/transform_stamped.hpp"
-#include "geometry_msgs/msg/pose.hpp"
 #include "dex_ivr_interfaces/srv/blob_centroid.hpp"
-#include "tf2_ros/transform_listener.h"
-#include "tf2_ros/buffer.h"
+#include "geometry_msgs/msg/pose.hpp"
+#include "geometry_msgs/msg/transform_stamped.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "tf2_ros/buffer.h"
+#include "tf2_ros/transform_listener.h"
 
 using namespace std::placeholders;
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("demo_exec");
@@ -45,8 +45,8 @@ struct Waypoint {
   std::string planner = "default";
 
   /* Constructor for waypoints with geometry_msgs::msg::Pose. */
-  Waypoint(geometry_msgs::msg::Pose wp_pose,
-           std::string group, bool cartesian, bool relative = false) {
+  Waypoint(geometry_msgs::msg::Pose wp_pose, std::string group, bool cartesian,
+           bool relative = false) {
     is_preset = false;
     pose = wp_pose;
     planning_group = group;
@@ -90,16 +90,18 @@ public:
   RunDemoNode(rclcpp::NodeOptions node_options)
       : Node("demo_exec", node_options) {
     this->parameter_setup();
-    color_blob_client = this->create_client<dex_ivr_interfaces::srv::BlobCentroid>("color_blob_find");
+    color_blob_client =
+        this->create_client<dex_ivr_interfaces::srv::BlobCentroid>(
+            "color_blob_find");
     while (!color_blob_client->wait_for_service(std::chrono::seconds(1))) {
       if (!rclcpp::ok()) {
         RCLCPP_ERROR(LOGGER, "Interrupted while waiting for the service.");
       }
       RCLCPP_INFO(LOGGER, "service not available, waiting again...");
     }
-    tf_buffer = std::make_unique<tf2_ros::Buffer>(this->get_clock(), tf2::Duration(1000));
-    tf_listener =
-      std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
+    tf_buffer = std::make_unique<tf2_ros::Buffer>(this->get_clock(),
+                                                  tf2::Duration(1000));
+    tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
   }
 
   void run_demo() {
@@ -140,16 +142,20 @@ public:
   }
 
   bool approach_ctb_handle() {
-    auto request = std::make_shared<dex_ivr_interfaces::srv::BlobCentroid::Request>();
+    auto request =
+        std::make_shared<dex_ivr_interfaces::srv::BlobCentroid::Request>();
     request->color = "red";
     auto future = color_blob_client->async_send_request(request);
     // Wait for the result.
-    while (future.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready){
-      RCLCPP_INFO_THROTTLE(LOGGER, *this->get_clock(), 1000, "Waiting for color blob response...");
+    while (future.wait_for(std::chrono::milliseconds(100)) !=
+           std::future_status::ready) {
+      RCLCPP_INFO_THROTTLE(LOGGER, *this->get_clock(), 1000,
+                           "Waiting for color blob response...");
     }
     auto response = future.get();
-    if (response->centroid_pose.header.frame_id != ""){
-      RCLCPP_INFO(LOGGER, "Blob frame id: %s", response->centroid_pose.header.frame_id.c_str());
+    if (response->centroid_pose.header.frame_id != "") {
+      RCLCPP_INFO(LOGGER, "Blob frame id: %s",
+                  response->centroid_pose.header.frame_id.c_str());
     } else {
       RCLCPP_ERROR(LOGGER, "Failed to find color blob.");
       return false;
@@ -158,8 +164,9 @@ public:
     geometry_msgs::msg::Pose local_pose = response->centroid_pose.pose;
     geometry_msgs::msg::TransformStamped transform;
     geometry_msgs::msg::Pose global_pose;
-    bool success = this->get_global_transform(response->centroid_pose.header.frame_id, transform);
-    if (!success){
+    bool success = this->get_global_transform(
+        response->centroid_pose.header.frame_id, transform);
+    if (!success) {
       return false;
     }
     tf2::doTransform(local_pose, global_pose, transform);
@@ -229,18 +236,22 @@ public:
   float scaling;
   std::unique_ptr<moveit::planning_interface::MoveGroupInterface> move_group;
   std::unique_ptr<moveit_visual_tools::MoveItVisualTools> moveit_viz;
-  rclcpp::Client<dex_ivr_interfaces::srv::BlobCentroid>::SharedPtr color_blob_client;
+  rclcpp::Client<dex_ivr_interfaces::srv::BlobCentroid>::SharedPtr
+      color_blob_client;
   std::unique_ptr<tf2_ros::Buffer> tf_buffer;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener;
 
 private:
-  bool get_global_transform(const std::string &frame_id, geometry_msgs::msg::TransformStamped &t) {
+  bool get_global_transform(const std::string &frame_id,
+                            geometry_msgs::msg::TransformStamped &t) {
     try {
-      t = this->tf_buffer->lookupTransform(move_group->getPlanningFrame(), frame_id, tf2::TimePointZero, std::chrono::nanoseconds(5000));
-    } catch (const tf2::TransformException & ex) {
-      RCLCPP_INFO(
-        this->get_logger(), "Could not get transform from %s to %s: %s",
-        frame_id.c_str(), move_group->getPlanningFrame().c_str(), ex.what());
+      t = this->tf_buffer->lookupTransform(move_group->getPlanningFrame(),
+                                           frame_id, tf2::TimePointZero,
+                                           std::chrono::nanoseconds(5000));
+    } catch (const tf2::TransformException &ex) {
+      RCLCPP_INFO(this->get_logger(),
+                  "Could not get transform from %s to %s: %s", frame_id.c_str(),
+                  move_group->getPlanningFrame().c_str(), ex.what());
       return false;
     }
     return true;

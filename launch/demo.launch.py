@@ -111,7 +111,7 @@ def generate_launch_description():
                     "use_sim_time": LaunchConfiguration("use_sim_time"),
                 }
             ],
-        )
+        ),
     ]
 
     return LaunchDescription(declared_arguments + nodes_to_start)
