@@ -37,17 +37,30 @@ static const rclcpp::Logger LOGGER = rclcpp::get_logger("demo_exec");
  * about how to execute it. */
 struct Waypoint {
   geometry_msgs::msg::Pose pose;
+  std::vector<double> config;
   std::string planning_group;
   bool plan_cartesian;
   bool is_relative;
   bool is_preset;
+  bool use_jconfig;
   std::string preset_name;
   std::string planner = "default";
+
+  /* Constructor for waypoints with joint configuration information. */
+  Waypoint(std::vector<double> j_config, std::string group, bool cartesian) {
+    is_preset = false;
+    use_jconfig = true;
+    config = j_config;
+    planning_group = group;
+    plan_cartesian = cartesian;
+    is_relative = false;
+  }
 
   /* Constructor for waypoints with geometry_msgs::msg::Pose. */
   Waypoint(geometry_msgs::msg::Pose wp_pose, std::string group, bool cartesian,
            bool relative = false) {
     is_preset = false;
+    use_jconfig = false;
     pose = wp_pose;
     planning_group = group;
     plan_cartesian = cartesian;
@@ -58,6 +71,7 @@ struct Waypoint {
   Waypoint(float x, float y, float z, float qx, float qy, float qz, float qw,
            std::string group, bool cartesian, bool relative = false) {
     is_preset = false;
+    use_jconfig = false;
     pose.position.x = x;
     pose.position.y = y;
     pose.position.z = z;
@@ -73,6 +87,7 @@ struct Waypoint {
   /* Constructor for preset waypoints, which do not require a pose to be set. */
   Waypoint(std::string name, std::string group, bool cartesian) {
     is_preset = true;
+    use_jconfig = false;
     preset_name = name;
     planning_group = group;
     plan_cartesian = cartesian;
@@ -110,6 +125,14 @@ public:
       RCLCPP_ERROR(LOGGER, "Failed to reach initial pose. Exiting.");
       return;
     }
+    if (!this->stow()) {
+      RCLCPP_ERROR(LOGGER, "Failed to stow manipulator. Exiting.");
+      return;
+    }
+    if (!this->traverse()) {
+      RCLCPP_ERROR(LOGGER, "Failed to traverse. Exiting.");
+      return;
+    }
     if (!this->approach_ctb()) {
       RCLCPP_ERROR(LOGGER, "Failed to reach CTB. Exiting.");
       return;
@@ -136,9 +159,22 @@ public:
     return plan_and_execute(approach_wp);
   }
 
+  bool stow() {
+    std::vector<double> approach_config = {-2.11185, -2.6529, 2.44346, 0.0, 1.0821, 3.26377};
+    Waypoint approach_wp = Waypoint(approach_config, "ur_manipulator", false);
+    approach_wp.planner = "RRTstarkConfigDefault";
+    return plan_and_execute(approach_wp);
+  }
+
+  bool traverse() {
+    std::vector<double> approach_config = {1.748};
+    Waypoint approach_wp = Waypoint(approach_config, "rail", false);
+    return plan_and_execute(approach_wp);
+  }
+
   bool approach_ctb() {
-    Waypoint approach_wp = Waypoint(0.821, 0.755, 0.898, 0.998, -0.037, 0.023,
-                                    -0.048, "clr", false);
+    std::vector<double> approach_config = {1.748, 0.0, -1.88496, -2.35619, 2.21657, 0.0, 1.309, 3.22886};
+    Waypoint approach_wp = Waypoint(approach_config, "clr", false);
     return plan_and_execute(approach_wp);
   }
 
@@ -350,13 +386,16 @@ private:
     if (waypoint.is_preset) {
       move_group->setJointValueTarget(
           move_group->getNamedTargetValues(waypoint.preset_name));
+    } if (waypoint.use_jconfig) {
+      move_group->setJointValueTarget(waypoint.config);
+      move_group->setNumPlanningAttempts(10);
     } else {
       geometry_msgs::msg::Pose start_pose = move_group->getCurrentPose().pose;
       geometry_msgs::msg::Pose end_pose = waypoint.pose;
       if (waypoint.is_relative) {
         end_pose = this->relative_to_global(start_pose, end_pose);
       }
-      move_group->setPoseTarget(end_pose);
+      move_group->setJointValueTarget(end_pose);
       move_group->setNumPlanningAttempts(10);
     }
 
