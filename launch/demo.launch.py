@@ -38,10 +38,11 @@ def load_yaml(package_name, file_path):
     except OSError:  # parent of IOError, OSError *and* WindowsError where available
         print("Was not able to load the yaml file at " + absolute_file_path)
         return None
-    
+
+
 def launch_setup(context, *args, **kwargs):
     sim = LaunchConfiguration("sim")
-    
+
     if sim.perform(context) == "true":
         # Use simulated camera prefix and topics
         color_blob_params = [

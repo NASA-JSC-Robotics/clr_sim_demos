@@ -153,27 +153,29 @@ public:
   }
 
   bool init() {
-    Waypoint approach_wp = Waypoint(-1.728, 0.135, 0.778, -0.714, 0.012, -0.042,
-                                    0.699, "clr", false);
-    approach_wp.planner = "RRTstarkConfigDefault";
-    return plan_and_execute(approach_wp);
+    Waypoint init_wp = Waypoint(-1.728, 0.135, 0.778, -0.714, 0.012, -0.042,
+                                0.699, "clr", false);
+    init_wp.planner = "RRTstarkConfigDefault";
+    return plan_and_execute(init_wp);
   }
 
   bool stow() {
-    std::vector<double> approach_config = {-2.11185, -2.6529, 2.44346, 0.0, 1.0821, 3.26377};
-    Waypoint approach_wp = Waypoint(approach_config, "ur_manipulator", false);
-    approach_wp.planner = "RRTstarkConfigDefault";
-    return plan_and_execute(approach_wp);
+    std::vector<double> stow_config = {-2.11185, -2.6529, 2.44346,
+                                       0.0,      1.0821,  3.26377};
+    Waypoint stow_wp = Waypoint(stow_config, "ur_manipulator", false);
+    stow_wp.planner = "RRTstarkConfigDefault";
+    return plan_and_execute(stow_wp);
   }
 
   bool traverse() {
-    std::vector<double> approach_config = {1.748};
-    Waypoint approach_wp = Waypoint(approach_config, "rail", false);
-    return plan_and_execute(approach_wp);
+    std::vector<double> rail_config = {1.748};
+    Waypoint rail_wp = Waypoint(rail_config, "rail", false);
+    return plan_and_execute(rail_wp);
   }
 
   bool approach_ctb() {
-    std::vector<double> approach_config = {1.748, 0.0, -1.88496, -2.35619, 2.21657, 0.0, 1.309, 3.22886};
+    std::vector<double> approach_config = {1.748,   0.0, -1.88496, -2.35619,
+                                           2.21657, 0.0, 1.309,    3.22886};
     Waypoint approach_wp = Waypoint(approach_config, "clr", false);
     return plan_and_execute(approach_wp);
   }
@@ -225,9 +227,9 @@ public:
   }
 
   bool lift_ctb() {
-    Waypoint approach_wp = Waypoint(0.0, 0.0, -0.2, 0.0, 0.0, 0.0, 1.0,
-                                    "ur_manipulator", true, true);
-    return plan_and_execute(approach_wp);
+    Waypoint lift_wp = Waypoint(0.0, 0.0, -0.2, 0.0, 0.0, 0.0, 1.0,
+                                "ur_manipulator", true, true);
+    return plan_and_execute(lift_wp);
   }
 
   bool plan_and_execute(const Waypoint &waypoint) {
@@ -386,7 +388,8 @@ private:
     if (waypoint.is_preset) {
       move_group->setJointValueTarget(
           move_group->getNamedTargetValues(waypoint.preset_name));
-    } if (waypoint.use_jconfig) {
+    }
+    if (waypoint.use_jconfig) {
       move_group->setJointValueTarget(waypoint.config);
       move_group->setNumPlanningAttempts(10);
     } else {
