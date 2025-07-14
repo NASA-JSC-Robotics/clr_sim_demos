@@ -16,7 +16,7 @@
 # under the License.
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
@@ -38,32 +38,36 @@ def load_yaml(package_name, file_path):
     except OSError:  # parent of IOError, OSError *and* WindowsError where available
         print("Was not able to load the yaml file at " + absolute_file_path)
         return None
-
-
-def generate_launch_description():
-
-    declared_arguments = []
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "use_sim_time",
-            default_value="true",
-            description="If the robot is running in simulation, use the published clock",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "wait_for_prompt",
-            default_value="true",
-            description="Whether to prompt before executing a trajectory.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "scaling_factor",
-            default_value="1.0",
-            description="Factor (<=1.0) by which to scale velocity and acceleration.",
-        )
-    )
+    
+def launch_setup(context, *args, **kwargs):
+    sim = LaunchConfiguration("sim")
+    
+    if sim.perform(context) == "true":
+        # Use simulated camera prefix and topics
+        color_blob_params = [
+            {
+                "prefix": "wrist_mounted_camera_color",
+                "mock_hardware": False,
+                "show_image": False,
+                "debug": False,
+                "continuous_output": False,
+                "color_img_topic": "color",
+                "depth_img_topic": "depth",
+                "cam_info_topic": "camera_info",
+                "use_sim_time": sim,
+            }
+        ]
+    else:
+        # Use colorblob (hardware) defaults
+        color_blob_params = [
+            {
+                "mock_hardware": False,
+                "show_image": False,
+                "debug": False,
+                "continuous_output": False,
+                "use_sim_time": sim,
+            }
+        ]
 
     description_package = "clr_imetro_environments"
     description_file = "clr_trainer_multi_hatch.urdf.xacro"
@@ -89,7 +93,7 @@ def generate_launch_description():
             executable="run_demo",
             parameters=[
                 moveit_config.to_dict(),
-                {"use_sim_time": LaunchConfiguration("use_sim_time")},
+                {"use_sim_time": sim},
                 {"wait_for_prompt": LaunchConfiguration("wait_for_prompt")},
                 {"scaling_factor": LaunchConfiguration("scaling_factor")},
             ],
@@ -98,20 +102,36 @@ def generate_launch_description():
             package="color_blob_centroid",
             executable="ColorBlobCentroid",
             output="screen",
-            parameters=[
-                {
-                    "prefix": "wrist_mounted_camera_color",
-                    "mock_hardware": False,
-                    "show_image": False,
-                    "debug": False,
-                    "continuous_output": False,
-                    "color_img_topic": "color",
-                    "depth_img_topic": "depth",
-                    "cam_info_topic": "camera_info",
-                    "use_sim_time": LaunchConfiguration("use_sim_time"),
-                }
-            ],
+            parameters=color_blob_params,
         ),
     ]
 
-    return LaunchDescription(declared_arguments + nodes_to_start)
+    return nodes_to_start
+
+
+def generate_launch_description():
+
+    declared_arguments = []
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sim",
+            default_value="true",
+            description="Whether to use the simulated hardware configuration and clock.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "wait_for_prompt",
+            default_value="true",
+            description="Whether to prompt before executing a trajectory.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "scaling_factor",
+            default_value="1.0",
+            description="Factor (<=1.0) by which to scale velocity and acceleration.",
+        )
+    )
+
+    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
