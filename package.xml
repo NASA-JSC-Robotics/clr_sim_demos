@@ -9,12 +9,15 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <depend>rclcpp</depend>
+  <depend>color_blob_centroid</depend>
+  <depend>dex_ivr_interfaces</depend>
   <depend>moveit_ros_planning_interface</depend>
   <depend>moveit_msgs</depend>
   <depend>moveit_visual_tools</depend>
-  <depend>tf2</depend>
+  <depend>rclcpp</depend>
   <depend>std_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_geometry_msgs</depend>
 
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>

@@ -23,6 +23,13 @@
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <thread>
 
+#include "dex_ivr_interfaces/srv/blob_centroid.hpp"
+#include "geometry_msgs/msg/pose.hpp"
+#include "geometry_msgs/msg/transform_stamped.hpp"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "tf2_ros/buffer.h"
+#include "tf2_ros/transform_listener.h"
+
 using namespace std::placeholders;
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("demo_exec");
 
@@ -30,17 +37,41 @@ static const rclcpp::Logger LOGGER = rclcpp::get_logger("demo_exec");
  * about how to execute it. */
 struct Waypoint {
   geometry_msgs::msg::Pose pose;
+  std::vector<double> config;
   std::string planning_group;
   bool plan_cartesian;
   bool is_relative;
   bool is_preset;
+  bool use_jconfig;
   std::string preset_name;
   std::string planner = "default";
+
+  /* Constructor for waypoints with joint configuration information. */
+  Waypoint(std::vector<double> j_config, std::string group, bool cartesian) {
+    is_preset = false;
+    use_jconfig = true;
+    config = j_config;
+    planning_group = group;
+    plan_cartesian = cartesian;
+    is_relative = false;
+  }
+
+  /* Constructor for waypoints with geometry_msgs::msg::Pose. */
+  Waypoint(geometry_msgs::msg::Pose wp_pose, std::string group, bool cartesian,
+           bool relative = false) {
+    is_preset = false;
+    use_jconfig = false;
+    pose = wp_pose;
+    planning_group = group;
+    plan_cartesian = cartesian;
+    is_relative = relative;
+  }
 
   /* Constructor for waypoints with pose information. */
   Waypoint(float x, float y, float z, float qx, float qy, float qz, float qw,
            std::string group, bool cartesian, bool relative = false) {
     is_preset = false;
+    use_jconfig = false;
     pose.position.x = x;
     pose.position.y = y;
     pose.position.z = z;
@@ -56,6 +87,7 @@ struct Waypoint {
   /* Constructor for preset waypoints, which do not require a pose to be set. */
   Waypoint(std::string name, std::string group, bool cartesian) {
     is_preset = true;
+    use_jconfig = false;
     preset_name = name;
     planning_group = group;
     plan_cartesian = cartesian;
@@ -73,11 +105,32 @@ public:
   RunDemoNode(rclcpp::NodeOptions node_options)
       : Node("demo_exec", node_options) {
     this->parameter_setup();
+    color_blob_client =
+        this->create_client<dex_ivr_interfaces::srv::BlobCentroid>(
+            "color_blob_find");
+    while (!color_blob_client->wait_for_service(std::chrono::seconds(1))) {
+      if (!rclcpp::ok()) {
+        RCLCPP_ERROR(LOGGER, "Interrupted while waiting for the service.");
+        return;
+      }
+      RCLCPP_INFO(LOGGER, "service not available, waiting again...");
+    }
+    tf_buffer = std::make_unique<tf2_ros::Buffer>(this->get_clock(),
+                                                  tf2::Duration(1000));
+    tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
   }
 
   void run_demo() {
     if (!this->init()) {
       RCLCPP_ERROR(LOGGER, "Failed to reach initial pose. Exiting.");
+      return;
+    }
+    if (!this->stow()) {
+      RCLCPP_ERROR(LOGGER, "Failed to stow manipulator. Exiting.");
+      return;
+    }
+    if (!this->traverse()) {
+      RCLCPP_ERROR(LOGGER, "Failed to traverse. Exiting.");
       return;
     }
     if (!this->approach_ctb()) {
@@ -100,22 +153,72 @@ public:
   }
 
   bool init() {
-    Waypoint approach_wp = Waypoint(-1.728, 0.135, 0.778, -0.714, 0.012, -0.042,
-                                    0.699, "clr", false);
-    approach_wp.planner = "geometric::RRTstar";
-    return plan_and_execute(approach_wp);
+    Waypoint init_wp = Waypoint(-1.728, 0.135, 0.778, -0.714, 0.012, -0.042,
+                                0.699, "clr", false);
+    init_wp.planner = "RRTstarkConfigDefault";
+    return plan_and_execute(init_wp);
+  }
+
+  bool stow() {
+    std::vector<double> stow_config = {-2.11185, -2.6529, 2.44346,
+                                       0.0,      1.0821,  3.26377};
+    Waypoint stow_wp = Waypoint(stow_config, "ur_manipulator", false);
+    stow_wp.planner = "RRTstarkConfigDefault";
+    return plan_and_execute(stow_wp);
+  }
+
+  bool traverse() {
+    std::vector<double> rail_config = {1.748};
+    Waypoint rail_wp = Waypoint(rail_config, "rail", false);
+    return plan_and_execute(rail_wp);
   }
 
   bool approach_ctb() {
-    Waypoint approach_wp = Waypoint(0.821, 0.755, 0.898, 0.998, -0.037, 0.023,
-                                    -0.048, "clr", false);
+    std::vector<double> approach_config = {1.748,   0.0, -1.88496, -2.35619,
+                                           2.21657, 0.0, 1.309,    3.22886};
+    Waypoint approach_wp = Waypoint(approach_config, "clr", false);
     return plan_and_execute(approach_wp);
   }
 
   bool approach_ctb_handle() {
-    Waypoint approach_wp = Waypoint(0.0, 0.0, 0.16, 0.0, 0.0, 0.0, 1.0,
-                                    "ur_manipulator", true, true);
-    return plan_and_execute(approach_wp);
+    // Find red blob in wrist camera image
+    auto request =
+        std::make_shared<dex_ivr_interfaces::srv::BlobCentroid::Request>();
+    request->color = "red";
+    auto future = color_blob_client->async_send_request(request);
+    // Wait for the result.
+    while (future.wait_for(std::chrono::milliseconds(100)) !=
+           std::future_status::ready) {
+      RCLCPP_INFO_THROTTLE(LOGGER, *this->get_clock(), 1000,
+                           "Waiting for color blob response...");
+    }
+    auto response = future.get();
+    if (response->centroid_pose.header.frame_id != "") {
+      RCLCPP_INFO(LOGGER, "Blob frame id: %s",
+                  response->centroid_pose.header.frame_id.c_str());
+    } else {
+      RCLCPP_ERROR(LOGGER, "Failed to find color blob.");
+      return false;
+    }
+
+    // Transform waypoint from camera frame to planning frame
+    geometry_msgs::msg::Pose local_pose = response->centroid_pose.pose;
+    geometry_msgs::msg::TransformStamped transform;
+    geometry_msgs::msg::Pose global_pose;
+    bool success = this->get_global_transform(
+        response->centroid_pose.header.frame_id, transform);
+    if (!success) {
+      return false;
+    }
+    tf2::doTransform(local_pose, global_pose, transform);
+
+    // Add offset to place grasp frame below the CTB handle
+    geometry_msgs::msg::Pose offset;
+    offset.position.z = 0.04;
+    global_pose = this->relative_to_global(global_pose, offset);
+
+    Waypoint blob_wp = Waypoint(global_pose, "chonkur_grasp", true);
+    return plan_and_execute(blob_wp);
   }
 
   bool close_grasp() {
@@ -124,9 +227,9 @@ public:
   }
 
   bool lift_ctb() {
-    Waypoint approach_wp = Waypoint(0.0, 0.0, -0.2, 0.0, 0.0, 0.0, 1.0,
-                                    "ur_manipulator", true, true);
-    return plan_and_execute(approach_wp);
+    Waypoint lift_wp = Waypoint(0.0, 0.0, -0.2, 0.0, 0.0, 0.0, 1.0,
+                                "ur_manipulator", true, true);
+    return plan_and_execute(lift_wp);
   }
 
   bool plan_and_execute(const Waypoint &waypoint) {
@@ -174,8 +277,27 @@ public:
   float scaling;
   std::unique_ptr<moveit::planning_interface::MoveGroupInterface> move_group;
   std::unique_ptr<moveit_visual_tools::MoveItVisualTools> moveit_viz;
+  rclcpp::Client<dex_ivr_interfaces::srv::BlobCentroid>::SharedPtr
+      color_blob_client;
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener;
 
 private:
+  bool get_global_transform(const std::string &frame_id,
+                            geometry_msgs::msg::TransformStamped &t) {
+    try {
+      t = this->tf_buffer->lookupTransform(move_group->getPlanningFrame(),
+                                           frame_id, tf2::TimePointZero,
+                                           std::chrono::nanoseconds(5000));
+    } catch (const tf2::TransformException &ex) {
+      RCLCPP_INFO(this->get_logger(),
+                  "Could not get transform from %s to %s: %s", frame_id.c_str(),
+                  move_group->getPlanningFrame().c_str(), ex.what());
+      return false;
+    }
+    return true;
+  }
+
   geometry_msgs::msg::Pose
   relative_to_global(const geometry_msgs::msg::Pose &start_pose,
                      const geometry_msgs::msg::Pose &end_pose) {
@@ -266,13 +388,17 @@ private:
     if (waypoint.is_preset) {
       move_group->setJointValueTarget(
           move_group->getNamedTargetValues(waypoint.preset_name));
+    }
+    if (waypoint.use_jconfig) {
+      move_group->setJointValueTarget(waypoint.config);
+      move_group->setNumPlanningAttempts(10);
     } else {
       geometry_msgs::msg::Pose start_pose = move_group->getCurrentPose().pose;
       geometry_msgs::msg::Pose end_pose = waypoint.pose;
       if (waypoint.is_relative) {
         end_pose = this->relative_to_global(start_pose, end_pose);
       }
-      move_group->setPoseTarget(end_pose);
+      move_group->setJointValueTarget(end_pose);
       move_group->setNumPlanningAttempts(10);
     }
 
