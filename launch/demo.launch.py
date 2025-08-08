@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+#
 # Copyright (c) 2025, United States Government, as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 #
@@ -16,9 +18,11 @@
 # under the License.
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
-from launch.substitutions import LaunchConfiguration
+from launch.actions import DeclareLaunchArgument, Shutdown, IncludeLaunchDescription
+from launch.conditions import IfCondition, UnlessCondition
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, NotSubstitution
 from launch_ros.actions import Node
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
 from moveit_configs_utils import MoveItConfigsBuilder
 import os
@@ -40,41 +44,59 @@ def load_yaml(package_name, file_path):
         return None
 
 
-def launch_setup(context, *args, **kwargs):
-    sim = LaunchConfiguration("sim")
+def generate_launch_description():
 
-    if sim.perform(context) == "true":
-        # Use simulated camera prefix and topics
-        color_blob_params = [
-            {
-                "prefix": "wrist_mounted_camera_color",
-                "mock_hardware": False,
-                "show_image": False,
-                "debug": False,
-                "continuous_output": False,
-                "color_img_topic": "color",
-                "depth_img_topic": "depth",
-                "cam_info_topic": "camera_info",
-                "use_sim_time": sim,
-            }
-        ]
-    else:
-        # Use colorblob (hardware) defaults
-        color_blob_params = [
-            {
-                "mock_hardware": False,
-                "show_image": False,
-                "debug": False,
-                "continuous_output": False,
-                "use_sim_time": sim,
-            }
-        ]
+    declared_arguments = []
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sim",
+            default_value="true",
+            description="If the robot is running in simulation, use the published clock. /"
+            "If this flag is false, the mockups managers will be launched.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "wait_for_prompt",
+            default_value="true",
+            description="Whether to prompt before executing a trajectory.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "scaling_factor",
+            default_value="1.0",
+            description="Factor (<=1.0) by which to scale velocity and acceleration.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "waypoint_cfg",
+            default_value="waypoints.yaml",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "rviz",
+            default_value="true",
+            description="Launch rviz.",
+        )
+    )
+
+    sim = LaunchConfiguration("sim")
+    rviz = LaunchConfiguration("rviz")
+    wp_cfg_file_name = LaunchConfiguration("waypoint_cfg")
+    waypoint_cfg = PathJoinSubstitution(
+        [get_package_share_directory("clr_dynamic_sim_demo"), "config", wp_cfg_file_name]
+    )
 
     description_package = "clr_imetro_environments"
     description_file = "clr_trainer_multi_hatch.urdf.xacro"
     moveit_config_file_path = "srdf/clr_and_sim_mockups.srdf.xacro"
 
     description_full_path = os.path.join(get_package_share_directory(description_package), "urdf", description_file)
+
+    rviz_config_file = os.path.join(get_package_share_directory("clr_dynamic_sim_demo"), "rviz", "demo_config.rviz")
 
     # TODO: look into opaque function to pass in args to the robot description
     moveit_config = (
@@ -95,44 +117,56 @@ def launch_setup(context, *args, **kwargs):
             parameters=[
                 moveit_config.to_dict(),
                 {"use_sim_time": sim},
+                {"waypoint_cfg": waypoint_cfg},
                 {"wait_for_prompt": LaunchConfiguration("wait_for_prompt")},
                 {"scaling_factor": LaunchConfiguration("scaling_factor")},
+                {"hw": NotSubstitution(sim)},
             ],
+            on_exit=Shutdown(),
         ),
         Node(
             package="color_blob_centroid",
             executable="ColorBlobCentroid",
             output="screen",
-            parameters=color_blob_params,
+            parameters=[
+                {
+                    "mock_hardware": False,
+                    "show_image": False,
+                    "debug": False,
+                    "continuous_output": False,
+                    "use_sim_time": sim,
+                }
+            ],
+        ),
+        Node(
+            package="rviz2",
+            executable="rviz2",
+            name="rviz2_moveit",
+            output="log",
+            condition=IfCondition(rviz),
+            arguments=["-d", rviz_config_file],
+            parameters=[
+                moveit_config.to_dict(),
+                sim,
+            ],
         ),
     ]
 
-    return nodes_to_start
+    hw_launch = [
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(
+                    get_package_share_directory("clr_imetro_environments"), "launch", "mockups_managers.launch.py"
+                )
+            ),
+            launch_arguments={
+                "hatch_4040": "true",
+                "trainer": "true",
+                "second_trainer": "false",
+                "tf_prefix": "",
+            }.items(),
+            condition=UnlessCondition(sim),
+        ),
+    ]
 
-
-def generate_launch_description():
-
-    declared_arguments = []
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "sim",
-            default_value="true",
-            description="Whether to use the simulated hardware configuration and clock.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "wait_for_prompt",
-            default_value="true",
-            description="Whether to prompt before executing a trajectory.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "scaling_factor",
-            default_value="1.0",
-            description="Factor (<=1.0) by which to scale velocity and acceleration.",
-        )
-    )
-
-    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
+    return LaunchDescription(declared_arguments + nodes_to_start + hw_launch)
