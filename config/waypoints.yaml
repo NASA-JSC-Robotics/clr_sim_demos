@@ -1,0 +1,133 @@
+waypoints:
+  init:
+    config:
+    - 0.0
+    - 0.0
+    - -3.71755
+    - -3.0020
+    - -0.9599
+    - -0.6982
+    - -1.5184
+    - 2.1118
+    planning_group: "clr"
+    cartesian: false
+    planner: "RRTstarkConfigDefault"
+  approach_bench_seat:
+    config:
+    - -3.8235
+    - -2.683256954185755
+    - -1.5352487041273213
+    - -0.44915294760331065
+    - -1.5091231026904337
+    - 2.2022859615991104
+    planning_group: "ur_manipulator"
+    cartesian: false
+    planner: "RRTstarkConfigDefault"
+  back_out:
+    pose:
+      x: 0.0
+      y: 0.0
+      z: -0.4
+      qx: 0.0
+      qy: 0.0
+      qz: 0.0
+      qw: 1.0
+    planning_group: "ur_manipulator"
+    cartesian: true
+    relative: true
+  stow:
+    config:
+    - -2.11185
+    - -2.6529
+    - 2.44346
+    - 0.0
+    - 1.0821
+    - 3.26377
+    planning_group: "ur_manipulator"
+    cartesian: false
+    planner: "RRTstarkConfigDefault"
+  traverse_right:
+    config:
+    - 1.748
+    planning_group: "rail"
+    cartesian: false
+  ctb_offset:
+    pose:
+      x: 0.0
+      y: 0.0
+      z: 0.03
+      qx: 0.0
+      qy: 0.0
+      qz: 0.0
+      qw: 1.0
+    planning_group: "ur_manipulator"
+    cartesian: true
+    relative: true
+  close_grasp:
+    preset_name: "close"
+    planning_group: "hand"
+  lift_relative:
+    pose:
+        x: 0.0
+        y: 0.0
+        z: -0.2
+        qx: 0.0
+        qy: 0.0
+        qz: 0.0
+        qw: 1.0
+    planning_group: "ur_manipulator"
+    cartesian: true
+    relative: true
+  lift_lift:
+    config:
+    - 0.680
+    planning_group: "lift"
+    cartesian: false
+  stow_ctb:
+    pose:
+      x: 0.0
+      y: 0.1
+      z: 0.0
+      qx: 0.0
+      qy: 0.0
+      qz: 0.0
+      qw: 1.0
+    planning_group: "ur_manipulator"
+    cartesian: true
+    relative: true
+  traverse_left:
+    config:
+    - 0.000
+    planning_group: "rail"
+    cartesian: false
+  pre_drop_ctb:
+    pose:
+      x: -1.708
+      y: 0.811
+      z: 1.580
+      qx: 0.725
+      qy: 0.688
+      qz: 0.032
+      qw: -0.004
+    planning_group: "ur_manipulator"
+    cartesian: true
+  drop_arm:
+    pose:
+      x: 0.0
+      y: 0.0
+      z: 0.1
+      qx: 0.0
+      qy: 0.0
+      qz: 0.0
+      qw: 1.0
+    planning_group: "ur_manipulator"
+    cartesian: true
+    relative: true
+  drop_lift:
+    config:
+    - 0.000
+    planning_group: "lift"
+    cartesian: false
+  open_grasp:
+    preset_name: "open"
+    planning_group: "hand"
