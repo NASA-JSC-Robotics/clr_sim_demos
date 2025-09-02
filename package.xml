@@ -2,15 +2,14 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>clr_dynamic_sim_demo</name>
-  <version>0.0.1</version>
+  <version>1.0.0</version>
   <description>Application demonstration of the CLR robot operating in its dynamic simulation</description>
   <maintainer email="nikki.j.hart@nasa.gov">njhart</maintainer>
   <license>Apache License, Version 2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <depend>dex_ivr_helpers</depend>
-  <depend>dex_ivr_interfaces</depend>
+  <depend>color_tools_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>moveit_core</depend>
   <depend>moveit_ros_planning_interface</depend>
