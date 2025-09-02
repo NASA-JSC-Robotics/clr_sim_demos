@@ -131,3 +131,15 @@ waypoints:
   open_grasp:
     preset_name: "open"
     planning_group: "hand"
+  back_off:
+    pose:
+      x: 0.0
+      y: 0.0
+      z: -0.05
+      qx: 0.0
+      qy: 0.0
+      qz: 0.0
+      qw: 1.0
+    planning_group: "ur_manipulator"
+    cartesian: true
+    relative: true

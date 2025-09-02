@@ -19,7 +19,7 @@
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, Shutdown, IncludeLaunchDescription
-from launch.conditions import IfCondition, UnlessCondition
+from launch.conditions import UnlessCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, NotSubstitution
 from launch_ros.actions import Node
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -75,16 +75,8 @@ def generate_launch_description():
             default_value="waypoints.yaml",
         )
     )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "rviz",
-            default_value="true",
-            description="Launch rviz.",
-        )
-    )
 
     sim = LaunchConfiguration("sim")
-    rviz = LaunchConfiguration("rviz")
     wp_cfg_file_name = LaunchConfiguration("waypoint_cfg")
     waypoint_cfg = PathJoinSubstitution(
         [get_package_share_directory("clr_dynamic_sim_demo"), "config", wp_cfg_file_name]
@@ -93,12 +85,8 @@ def generate_launch_description():
     description_package = "clr_imetro_environments"
     description_file = "clr_trainer_multi_hatch.urdf.xacro"
     moveit_config_file_path = "srdf/clr_and_sim_mockups.srdf.xacro"
-
     description_full_path = os.path.join(get_package_share_directory(description_package), "urdf", description_file)
 
-    rviz_config_file = os.path.join(get_package_share_directory("clr_dynamic_sim_demo"), "rviz", "demo_config.rviz")
-
-    # TODO: look into opaque function to pass in args to the robot description
     moveit_config = (
         MoveItConfigsBuilder("clr", package_name="clr_moveit_config")
         .robot_description(file_path=description_full_path)
@@ -114,6 +102,7 @@ def generate_launch_description():
         Node(
             package="clr_dynamic_sim_demo",
             executable="run_demo",
+            output="both",
             parameters=[
                 moveit_config.to_dict(),
                 {"use_sim_time": sim},
@@ -127,7 +116,7 @@ def generate_launch_description():
         Node(
             package="color_blob_centroid",
             executable="ColorBlobCentroid",
-            output="screen",
+            output="both",
             parameters=[
                 {
                     "mock_hardware": False,
@@ -136,18 +125,6 @@ def generate_launch_description():
                     "continuous_output": False,
                     "use_sim_time": sim,
                 }
-            ],
-        ),
-        Node(
-            package="rviz2",
-            executable="rviz2",
-            name="rviz2_moveit",
-            output="log",
-            condition=IfCondition(rviz),
-            arguments=["-d", rviz_config_file],
-            parameters=[
-                moveit_config.to_dict(),
-                sim,
             ],
         ),
     ]

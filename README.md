@@ -1,30 +1,50 @@
-# clr_dynamic_sim_demo
+# CLR CTB Grasping Demonstration
 
-This package contains an application demonstration of the CLR robot picking up a CTB.
-The demonstration can be run in the MuJoCo simulation or on hardware and is used to evaluate sim-to-real transfer of simulated behaviors.
+This package contains a demonstration of a perception-enabled CTB picking and placing task.
 
-## Sim Instructions
-To run this demo in simulation, open three terminals in the clr_dynamic_sim_ws Docker container and run:
+The application has been used to trial a sim-to-real transfer of simulated behaviors using [MuJoCo](https://mujoco.readthedocs.io/en/stable/overview.html).
+
+![alt text](./dynamic_sim_rviz.png "Rviz Rendering of CLR")
+
+## Simulation Instructions
+
+To run this demo in simulation, run the following in a dynamic sim container:
 
 ```bash
-    ros2 launch clr_mujoco_config clr_mujoco.launch.py model_env:=true
+# Start the mujoco ros2 control-based simulation including the environment
+ros2 launch clr_mujoco_config clr_mujoco.launch.py
 
-    ros2 launch clr_moveit_config clr_moveit.launch.py launch_rviz:=false include_mockups_in_description:=true use_sim_time:=true
+# Launch the moveit group and the demo's planning GUI
+ros2 launch clr_dynamic_sim_demo demo_planning_viz.launch.py
 
-    ros2 launch clr_dynamic_sim_demo demo.launch.py rviz:=true
+# Start the demonstration, the console will display prompts from MoveItVisualTools and provide
+# other information.
+ros2 launch clr_dynamic_sim_demo demo.launch.py
 ```
+
+By default, each stage of the demonstration requires operator approval by clicking `next` in the RViz console.
+To disable this and just let the simulation run, use (still click `next` to start the sim):
+
+```bash
+ros2 launch clr_dynamic_sim_demo demo.launch.py wait_for_prompt:=false
+```
+
 ## Hardware Instructions
-To run this demo on hardware, bring up the clr_dynamic_sim_ws Docker container on the controls computer, open two terminals, and run:
+
+To run this demo on hardware, run the following in a dynamic sim container on the controls PC:
 
 ```bash
-    ros2 launch clr_deploy clr_hw.launch.py include_mockups_in_description:=true
+ros2 launch clr_deploy clr_hw.launch.py include_mockups_in_description:=true
 
-    ros2 launch chonkur_deploy ur_tools.launch.py
+ros2 launch chonkur_deploy ur_tools.launch.py
 ```
-Then open two terminals in the clr_dynamic_sim_ws Docker container on the console computer and run:
+
+Then run the following in the dynamic sim container on the console PC:
 
 ```bash
-    ros2 launch clr_moveit_config clr_moveit.launch.py launch_rviz:=false include_mockups_in_description:=true
+ros2 launch clr_moveit_config clr_moveit.launch.py launch_rviz:=false include_mockups_in_description:=true
 
-    ros2 launch clr_dynamic_sim_demo demo.launch.py rviz:=true sim:=false
+ros2 launch clr_dynamic_sim_demo demo_planning_viz.launch.py sim:=false
+
+ros2 launch clr_dynamic_sim_demo demo.launch.py sim:=false
 ```
