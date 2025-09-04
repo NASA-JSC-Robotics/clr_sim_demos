@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(clr_dynamic_sim_demo)
+project(clr_pick_and_place_demo)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)

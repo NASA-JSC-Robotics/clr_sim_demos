@@ -44,7 +44,7 @@ def generate_launch_description():
     description_file = "clr_trainer_multi_hatch.urdf.xacro"
     moveit_config_file_path = "srdf/clr_and_sim_mockups.srdf.xacro"
     description_full_path = os.path.join(get_package_share_directory(description_package), "urdf", description_file)
-    rviz_config_file = os.path.join(get_package_share_directory("clr_dynamic_sim_demo"), "rviz", "demo_config.rviz")
+    rviz_config_file = os.path.join(get_package_share_directory("clr_pick_and_place_demo"), "rviz", "demo_config.rviz")
 
     moveit_config = (
         MoveItConfigsBuilder("clr", package_name="clr_moveit_config")

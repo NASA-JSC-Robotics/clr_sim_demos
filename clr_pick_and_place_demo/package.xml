@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>clr_dynamic_sim_demo</name>
+  <name>clr_pick_and_place_demo</name>
   <version>1.0.0</version>
   <description>Application demonstration of the CLR robot operating in its dynamic simulation</description>
   <maintainer email="nikki.j.hart@nasa.gov">njhart</maintainer>
