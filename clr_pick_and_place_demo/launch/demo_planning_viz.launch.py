@@ -70,15 +70,15 @@ def generate_launch_description():
             ],
         ),
         IncludeLaunchDescription(
-          PythonLaunchDescriptionSource(
-              os.path.join(get_package_share_directory("clr_moveit_config"), "launch", "clr_moveit.launch.py"),
-          ),
-          launch_arguments={
-            "launch_rviz" : "false",
-            "include_mockups_in_description": "true",
-            "use_sim_time": sim,
-          }.items(),
-        )
+            PythonLaunchDescriptionSource(
+                os.path.join(get_package_share_directory("clr_moveit_config"), "launch", "clr_moveit.launch.py"),
+            ),
+            launch_arguments={
+                "launch_rviz": "false",
+                "include_mockups_in_description": "true",
+                "use_sim_time": sim,
+            }.items(),
+        ),
     ]
 
     return LaunchDescription(declared_arguments + launches)

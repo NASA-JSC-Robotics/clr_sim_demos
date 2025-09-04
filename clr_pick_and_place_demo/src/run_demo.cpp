@@ -132,8 +132,7 @@ transform_stamped_to_pose_stamped(const geometry_msgs::msg::TransformStamped& tr
 geometry_msgs::msg::PoseStamped rotate_about_frame(std::string rotation_frame,
                                                    geometry_msgs::msg::PoseStamped& rotation_frame_pose,
                                                    geometry_msgs::msg::PoseStamped& ee_start_frame_pose,
-                                                   double rotation_amount,
-                                                   tf2::Vector3 axis_rotation,
+                                                   double rotation_amount, tf2::Vector3 axis_rotation,
                                                    bool keep_start_orientation)
 {
   // Convert poses to tf2::Transform
