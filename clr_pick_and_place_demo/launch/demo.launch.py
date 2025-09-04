@@ -79,7 +79,7 @@ def generate_launch_description():
     sim = LaunchConfiguration("sim")
     wp_cfg_file_name = LaunchConfiguration("waypoint_cfg")
     waypoint_cfg = PathJoinSubstitution(
-        [get_package_share_directory("clr_dynamic_sim_demo"), "config", wp_cfg_file_name]
+        [get_package_share_directory("clr_pick_and_place_demo"), "config", wp_cfg_file_name]
     )
 
     description_package = "clr_imetro_environments"
@@ -100,7 +100,7 @@ def generate_launch_description():
 
     nodes_to_start = [
         Node(
-            package="clr_dynamic_sim_demo",
+            package="clr_pick_and_place_demo",
             executable="run_demo",
             output="both",
             parameters=[
