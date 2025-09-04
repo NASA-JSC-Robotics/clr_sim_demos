@@ -5,7 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - /MotionPlanning1/Planned Path1
+        - /MotionPlanning1/Scene Robot1
       Splitter Ratio: 0.5372233390808105
     Tree Height: 493
   - Class: rviz_common/Selection
@@ -296,7 +296,6 @@ Visualization Manager:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-            Value: true
           ground_plane:
             Alpha: 1
             Show Axes: false
@@ -1090,7 +1089,6 @@ Visualization Manager:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-            Value: true
           ground_plane:
             Alpha: 1
             Show Axes: false
@@ -1619,14 +1617,14 @@ Visualization Manager:
             Value: true
         Robot Alpha: 1
         Show Robot Collision: false
-        Show Robot Visual: true
+        Show Robot Visual: false
       Value: true
       Velocity_Scaling_Factor: 0.1
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: MarkerArray
       Namespaces:
-        {}
+        Sphere: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -1873,7 +1871,6 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: true
         ground_plane:
           Alpha: 1
           Show Axes: false
