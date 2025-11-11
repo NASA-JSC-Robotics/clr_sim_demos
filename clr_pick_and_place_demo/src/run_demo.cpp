@@ -22,8 +22,9 @@
 #include <map>
 #include <thread>
 
-#include <moveit/move_group_interface/move_group_interface.h>
-#include <moveit/trajectory_processing/iterative_time_parameterization.h>
+#include <moveit/move_group_interface/move_group_interface.hpp>
+#include <moveit/trajectory_processing/time_optimal_trajectory_generation.hpp>
+#include <moveit/utils/moveit_error_code.h>
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <moveit_msgs/msg/allowed_collision_matrix.hpp>
 #include <moveit_msgs/srv/apply_planning_scene.hpp>
@@ -728,10 +729,10 @@ private:
     // The page below is referenced, which recommends manual velocity scaling:
     // https://groups.google.com/g/moveit-users/c/MOoFxy2exT4
 
-    trajectory_processing::IterativeParabolicTimeParameterization iptp;
+    trajectory_processing::TimeOptimalTrajectoryGeneration totg;
 
     bool success;
-    success = iptp.computeTimeStamps(rt, scaling, scaling);
+    success = totg.computeTimeStamps(rt, scaling, scaling);
     RCLCPP_INFO(LOGGER, "Computed time stamp %s", success ? "SUCCEEDED" : "FAILED");
 
     if (success)
@@ -786,12 +787,12 @@ private:
     if (error_code == moveit::core::MoveItErrorCode::SUCCESS)
     {
       RCLCPP_INFO(LOGGER, "Successfully computed trajectory");
-      trajectory = plan.trajectory_;
+      trajectory = plan.trajectory;
       return true;
     }
     else
     {
-      RCLCPP_ERROR(LOGGER, "Planning failed with error code %s", error_code_to_string(error_code).c_str());
+      RCLCPP_ERROR(LOGGER, "Planning failed with error code %s", error_code.message.c_str());
       return false;
     }
   }
@@ -801,7 +802,7 @@ private:
     moveit::core::MoveItErrorCode move_success = move_group->execute(trajectory);
     if (move_success != moveit::core::MoveItErrorCode::SUCCESS)
     {
-      error_code_to_string(move_success);
+      RCLCPP_ERROR(LOGGER, "Execution failed with error code %s", move_success.message.c_str());
       return false;
     }
     return true;
