@@ -22,10 +22,10 @@
 #include <map>
 #include <thread>
 
-#include <moveit/move_group_interface/move_group_interface.hpp>
-#include <moveit/trajectory_processing/time_optimal_trajectory_generation.hpp>
 #include <moveit/utils/moveit_error_code.h>
 #include <moveit_visual_tools/moveit_visual_tools.h>
+#include <moveit/move_group_interface/move_group_interface.hpp>
+#include <moveit/trajectory_processing/time_optimal_trajectory_generation.hpp>
 #include <moveit_msgs/msg/allowed_collision_matrix.hpp>
 #include <moveit_msgs/srv/apply_planning_scene.hpp>
 #include <moveit_msgs/srv/get_planning_scene.hpp>
