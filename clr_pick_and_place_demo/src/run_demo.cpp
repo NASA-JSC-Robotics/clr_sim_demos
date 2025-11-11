@@ -22,7 +22,7 @@
 #include <map>
 #include <thread>
 
-#include <moveit/utils/moveit_error_code.h>
+#include <moveit/utils/moveit_error_code.hpp>
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <moveit/move_group_interface/move_group_interface.hpp>
 #include <moveit/trajectory_processing/time_optimal_trajectory_generation.hpp>
@@ -702,10 +702,9 @@ private:
     RCLCPP_INFO(LOGGER, "End effector link: %s", move_group->getEndEffectorLink().c_str());
     RCLCPP_INFO(LOGGER, "Using planning group: %s", move_group->getName().c_str());
 
-    const double jump_threshold = 0.0;
     const double eef_step = 0.01;
 
-    double trajectory_percent = move_group->computeCartesianPath(poses, eef_step, jump_threshold, trajectory);
+    double trajectory_percent = move_group->computeCartesianPath(poses, eef_step, trajectory);
 
     if (trajectory_percent == 1.0)
     {
