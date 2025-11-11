@@ -22,10 +22,10 @@
 #include <map>
 #include <thread>
 
-#include <moveit/utils/moveit_error_code.hpp>
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <moveit/move_group_interface/move_group_interface.hpp>
 #include <moveit/trajectory_processing/time_optimal_trajectory_generation.hpp>
+#include <moveit/utils/moveit_error_code.hpp>
 #include <moveit_msgs/msg/allowed_collision_matrix.hpp>
 #include <moveit_msgs/srv/apply_planning_scene.hpp>
 #include <moveit_msgs/srv/get_planning_scene.hpp>
@@ -760,30 +760,29 @@ private:
     {
       move_group->setJointValueTarget(move_group->getNamedTargetValues(waypoint.preset_name));
     }
-    if (waypoint.use_jconfig)
+    else if (waypoint.use_jconfig)
     {
       move_group->setJointValueTarget(waypoint.config);
-      move_group->setNumPlanningAttempts(10);
     }
     else
     {
-      geometry_msgs::msg::Pose start_pose = move_group->getCurrentPose().pose;
       geometry_msgs::msg::Pose end_pose = waypoint.pose;
       if (waypoint.is_relative)
       {
+        geometry_msgs::msg::Pose start_pose = move_group->getCurrentPose().pose;
         end_pose = this->relative_to_global(start_pose, end_pose);
       }
-      move_group->setJointValueTarget(end_pose);
-      move_group->setNumPlanningAttempts(10);
+      move_group->setPoseTarget(end_pose);
     }
 
+    move_group->setNumPlanningAttempts(5);
     move_group->setMaxVelocityScalingFactor(scaling);
     move_group->setMaxAccelerationScalingFactor(scaling);
 
     moveit::planning_interface::MoveGroupInterface::Plan plan;
     moveit::core::MoveItErrorCode error_code = move_group->plan(plan);
 
-    if (error_code == moveit::core::MoveItErrorCode::SUCCESS)
+    if (error_code)
     {
       RCLCPP_INFO(LOGGER, "Successfully computed trajectory");
       trajectory = plan.trajectory;
@@ -791,7 +790,7 @@ private:
     }
     else
     {
-      RCLCPP_ERROR(LOGGER, "Planning failed with error code %s", error_code.message.c_str());
+      RCLCPP_ERROR(LOGGER, "Planning failed: %s", error_code.message.c_str());
       return false;
     }
   }
