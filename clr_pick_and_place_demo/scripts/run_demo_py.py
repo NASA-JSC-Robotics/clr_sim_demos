@@ -3,6 +3,7 @@
 # python libraries
 import threading
 import yaml
+import time
 
 # generic ros libraries
 import rclpy
@@ -17,6 +18,8 @@ from moveit.planning import MoveItPy, PlanRequestParameters
 import tf_transformations as tf
 
 from geometry_msgs.msg import Pose
+from sensor_msgs.msg import Joy
+
 
 from moveit.core.kinematic_constraints import construct_joint_constraint
 
@@ -24,6 +27,8 @@ from tf2_ros import (
     Buffer,
     TransformListener,
 )
+
+approved = False
 
 
 class Waypoint:
@@ -299,11 +304,26 @@ def plan_to_waypoint(waypoint, moveit_object, tf_buffer):
 def execute_plan(plan_result, moveit_object):
     # execute the plan
     if plan_result:
+        prompt("Press next to continue")
         get_logger("moveit_py").info("Executing plan")
         robot_trajectory = plan_result.trajectory
         moveit_object.execute(robot_trajectory, controllers=[])
     else:
         get_logger("moveit_py").error("Planning failed")
+
+
+def visual_tools_gui_cb(msg: Joy):
+    if msg.buttons[1] == 1:
+        global approved
+        approved = True
+
+
+def prompt(text):
+    global approved
+    approved = False
+    get_logger("moveit_py").info(f"{text}")
+    while not approved:
+        time.sleep(0.1)
 
 
 def main():
@@ -315,6 +335,8 @@ def main():
     from rclpy.node import Node
 
     node = Node("test_node")
+    rviz_tools_subscriber = node.create_subscription(Joy, "/rviz_visual_tools_gui", visual_tools_gui_cb, 10)
+
     executor = MultiThreadedExecutor()  # choose any number you want
     executor.add_node(node)
 
