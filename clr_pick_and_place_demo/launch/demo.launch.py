@@ -94,9 +94,6 @@ def generate_launch_description():
         .robot_description_kinematics(file_path="config/kinematics.yaml")
         .joint_limits(file_path="config/joint_limits.yaml")
         .trajectory_execution(file_path="config/clr_moveit_controllers.yaml")
-        # .planning_pipelines(
-        #     pipelines=["ompl"],
-        # )
         .moveit_cpp(file_path=get_package_share_directory("clr_pick_and_place_demo") + "/config/moveit_cpp.yaml")
         .to_moveit_configs()
     )
@@ -127,13 +124,6 @@ def generate_launch_description():
                 {"wait_for_prompt": LaunchConfiguration("wait_for_prompt")},
                 {"scaling_factor": LaunchConfiguration("scaling_factor")},
                 {"hw": NotSubstitution(sim)},
-                PathJoinSubstitution(
-                    [
-                        get_package_share_directory("clr_moveit_config"),
-                        "config",
-                        "pilz_industrial_motion_planner.yaml",
-                    ]
-                ),
             ],
             on_exit=Shutdown(),
         ),

@@ -190,11 +190,15 @@ def plan_to_pose(waypoint, moveit_object, tf_buffer):
     tip_link = jmg.eef_name
     # get_logger("moveit_py").info(f"-----------------available planners: {planning_component.get_available_planners()}")
     plan_request_parameters = PlanRequestParameters(moveit_object, waypoint.planning_group)
-    # plan_request_parameters.planner_id = "RRTConnectkConfigDefault"
-    # plan_request_parameters.planning_pipeline = "ompl"
-    plan_request_parameters.planner_id = "LIN"
-    plan_request_parameters.planning_pipeline = "pilz_industrial_motion_planner"
-    # planning_component.set_planner_id("PilzCartesianPlanner")
+    if waypoint.plan_cartesian:
+        plan_request_parameters.planner_id = "LIN"
+        plan_request_parameters.planning_pipeline = "pilz_industrial_motion_planner"
+        # move backwards was failing without these params
+        plan_request_parameters.max_velocity_scaling_factor = 0.5
+        plan_request_parameters.max_acceleration_scaling_factor = 0.5
+    else:
+        plan_request_parameters.planner_id = "RRTConnectkConfigDefault"
+        plan_request_parameters.planning_pipeline = "ompl"
 
     # set pose goal with PoseStamped message
     pose_goal = PoseStamped()
@@ -331,11 +335,9 @@ def main():
     moveit_object = MoveItPy(node_name="moveit_py")
     logger.info("MoveItPy instance created")
 
-    # moveit_object.getPlanningPipelines()
-    plan_to_waypoint(waypoint_map["back_out"], moveit_object, tf_buffer)
-    return
     plan_to_waypoint(waypoint_map["init"], moveit_object, tf_buffer)
     plan_to_waypoint(waypoint_map["approach_bench_seat"], moveit_object, tf_buffer)
+    plan_to_waypoint(waypoint_map["back_out"], moveit_object, tf_buffer)
     plan_to_waypoint(waypoint_map["pre_drop_ctb"], moveit_object, tf_buffer)
 
 
