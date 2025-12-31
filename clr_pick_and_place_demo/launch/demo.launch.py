@@ -94,22 +94,46 @@ def generate_launch_description():
         .robot_description_kinematics(file_path="config/kinematics.yaml")
         .joint_limits(file_path="config/joint_limits.yaml")
         .trajectory_execution(file_path="config/clr_moveit_controllers.yaml")
-        .planning_pipelines(default_planning_pipeline="ompl", pipelines=["ompl"])
+        # .planning_pipelines(
+        #     pipelines=["ompl"],
+        # )
+        .moveit_cpp(file_path=get_package_share_directory("clr_pick_and_place_demo") + "/config/moveit_cpp.yaml")
         .to_moveit_configs()
     )
 
     nodes_to_start = [
+        # Node(
+        #     package="clr_pick_and_place_demo",
+        #     executable="run_demo",
+        #     output="both",
+        #     parameters=[
+        #         moveit_config.to_dict(),
+        #         {"use_sim_time": sim},
+        #         {"waypoint_cfg": waypoint_cfg},
+        #         {"wait_for_prompt": LaunchConfiguration("wait_for_prompt")},
+        #         {"scaling_factor": LaunchConfiguration("scaling_factor")},
+        #         {"hw": NotSubstitution(sim)},
+        #     ],
+        #     on_exit=Shutdown(),
+        # ),
         Node(
             package="clr_pick_and_place_demo",
-            executable="run_demo",
+            executable="run_demo_py.py",
             output="both",
             parameters=[
                 moveit_config.to_dict(),
-                {"use_sim_time": sim},
+                {"use_sim_time": True},
                 {"waypoint_cfg": waypoint_cfg},
                 {"wait_for_prompt": LaunchConfiguration("wait_for_prompt")},
                 {"scaling_factor": LaunchConfiguration("scaling_factor")},
                 {"hw": NotSubstitution(sim)},
+                PathJoinSubstitution(
+                    [
+                        get_package_share_directory("clr_moveit_config"),
+                        "config",
+                        "pilz_industrial_motion_planner.yaml",
+                    ]
+                ),
             ],
             on_exit=Shutdown(),
         ),

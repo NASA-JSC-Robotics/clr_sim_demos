@@ -11,6 +11,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 find_package(color_tools_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(moveit_core REQUIRED)
@@ -48,5 +49,12 @@ install(DIRECTORY
 
 install(TARGETS run_demo
   DESTINATION lib/${PROJECT_NAME})
+
+ament_python_install_package(${PROJECT_NAME})
+
+install(PROGRAMS
+    scripts/run_demo_py.py
+    DESTINATION lib/${PROJECT_NAME}
+)
 
 ament_package()
