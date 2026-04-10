@@ -268,6 +268,11 @@ public:
       RCLCPP_ERROR(LOGGER, "Failed to approach CTB dropoff location. Exiting.");
       return;
     }
+    if (!this->lift_lift())
+    {
+      RCLCPP_ERROR(LOGGER, "Failed to actuate vertical lift. Exiting.");
+      return;
+    }
     if (!this->traverse_left_1())
     {
       RCLCPP_ERROR(LOGGER, "Failed to traverse left. Exiting.");
@@ -468,13 +473,12 @@ public:
   bool lift_ctb()
   {
     RCLCPP_INFO(LOGGER, "Lifting CTB.");
-    return plan_and_execute(wp_map.at("lift_relative")) && plan_and_execute(wp_map.at("stow_ctb")) &&
-           plan_and_execute(wp_map.at("lift_lift"));
+    return plan_and_execute(wp_map.at("lift_relative"));
   }
 
   bool reorient_ctb()
   {
-    RCLCPP_INFO(LOGGER, "Approaching CTB dropoff location.");
+    RCLCPP_INFO(LOGGER, "Reorienting CTB.");
     geometry_msgs::msg::TransformStamped eef;
     if (!this->get_global_transform("tool0", eef))
     {
@@ -483,6 +487,12 @@ public:
     Waypoint approach_wp_1 = Waypoint(eef.transform.translation.x, eef.transform.translation.y,
                                       eef.transform.translation.z, 0.725, 0.688, 0.032, -0.004, "ur_manipulator", true);
     return plan_and_execute(approach_wp_1);
+  }
+
+  bool lift_lift()
+  {
+    RCLCPP_INFO(LOGGER, "Performing vertical lift.");
+    return plan_and_execute(wp_map.at("lift_lift"));
   }
 
   bool traverse_left_1()
