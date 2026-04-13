@@ -112,6 +112,45 @@ def generate_launch_description():
             description="Optionally randomize CTB orientation in sim",
         )
     )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "ctb_z_rotation",
+            default_value = "90",
+            description="Optionally specify CTB orientation, ignored if randomize_ctb_orientation is true"
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "randomize_ctb_x",
+            default_value="false",
+            description="Optionally randomize the CTB's position along the length of CLR",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "ctb_x_position",
+            default_value = "0.8",
+            description="Optionally specify CTB x position, along the length of the rail, \
+                        specified in meters from world frame, recommend values in the range of (0.1 ,1.4), \
+                        ignored if randomize_ctb_x is true"
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "randomize_ctb_y",
+            default_value="false",
+            description="Optionally randomize the CTB's distance from CLR",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "ctb_y_position",
+            default_value = "0.8",
+            description="Optionally specify CTB y position, the distance between the CTB and the rail, \
+                        specified in meters from world frame, recommend values in the range of (0.6, 0.95), \
+                        ignored if randomize_ctb_x is true"
+        )
+    )
 
     sim = LaunchConfiguration("sim")
     wp_cfg_file_name = LaunchConfiguration("waypoint_cfg")
@@ -121,6 +160,11 @@ def generate_launch_description():
     scaling_factor = LaunchConfiguration("scaling_factor")
     wait_for_prompt = LaunchConfiguration("wait_for_prompt")
     randomize_ctb_orientation = LaunchConfiguration("randomize_ctb_orientation")
+    ctb_z_rotation = LaunchConfiguration("ctb_z_rotation")
+    randomize_ctb_x = LaunchConfiguration("randomize_ctb_x")
+    ctb_x_position = LaunchConfiguration("ctb_x_position")
+    randomize_ctb_y = LaunchConfiguration("randomize_ctb_y")
+    ctb_y_position = LaunchConfiguration("ctb_y_position")
 
     description_package = "clr_imetro_environments"
     description_file = "clr_trainer_multi_hatch.urdf.xacro"
@@ -135,12 +179,25 @@ def generate_launch_description():
     clr_mujoco_description_file = "clr_mujoco_xacro.urdf"
 
     def generate_mjcf_description_and_node(context):
-        randomize = randomize_ctb_orientation.perform(context)
-        if randomize.lower() == "true":
-            ctb_orientation = random.uniform(0, 180)
-            print(f"CTB Orientation is randomized \n\t CTB Orientation Result:{ctb_orientation}")
+        
+        ctb_orientation_randomized = randomize_ctb_orientation.perform(context)
+        ctb_x_randomized = randomize_ctb_x.perform(context)
+        ctb_y_randomized = randomize_ctb_y.perform(context)
+        if ctb_orientation_randomized.lower() == "true":
+            ctb_rot_z = random.uniform(0, 180)
+            print(f"CTB Orientation is randomized \n\t CTB Orientation:{ctb_rot_z} (deg)")
         else:
-            ctb_orientation = 90.0
+            ctb_rot_z = ctb_z_rotation.perform(context)
+        if ctb_x_randomized.lower() == "true":
+            ctb_x = random.uniform(0.1,1.4)
+            print(f"CTB X Position is randomized \n\t CTB X Position:{ctb_x} (m)")
+        else:
+            ctb_x = ctb_x_position.perform(context)
+        if ctb_y_randomized.lower() == "true":
+            ctb_y = random.uniform(0.6,0.95)
+            print(f"CTB Y Position is randomized \n\t CTB Y Position:{ctb_y} (m)")
+        else:
+            ctb_y = ctb_y_position.perform(context)
         mjcf_robot_description_content = Command(
             [
                 PathJoinSubstitution([FindExecutable(name="xacro")]),
@@ -151,7 +208,11 @@ def generate_launch_description():
                 " model_env:=true",
                 " include_scene_objects:=true",
                 " ctb_orientation:=",
-                str(ctb_orientation),
+                str(ctb_rot_z),
+                " ctb_position_x:=",
+                str(ctb_x),
+                " ctb_position_y:=",
+                str(ctb_y),
             ]
         ).perform(context)
 
@@ -160,7 +221,7 @@ def generate_launch_description():
         tmp.close()
 
         # Ensure the file gets deleted
-        def cleanup(event, context):
+        def cleanup(event, context): 
             if os.path.exists(tmp.name):
                 os.remove(tmp.name)
 
