@@ -115,8 +115,8 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "ctb_z_rotation",
-            default_value = "90",
-            description="Optionally specify CTB orientation, ignored if randomize_ctb_orientation is true"
+            default_value="90",
+            description="Optionally specify CTB orientation, ignored if randomize_ctb_orientation is true",
         )
     )
     declared_arguments.append(
@@ -129,10 +129,10 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "ctb_x_position",
-            default_value = "0.8",
+            default_value="0.8",
             description="Optionally specify CTB x position, along the length of the rail, \
                         specified in meters from world frame, recommend values in the range of (0.1 ,1.4), \
-                        ignored if randomize_ctb_x is true"
+                        ignored if randomize_ctb_x is true",
         )
     )
     declared_arguments.append(
@@ -145,10 +145,10 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "ctb_y_position",
-            default_value = "0.8",
+            default_value="0.8",
             description="Optionally specify CTB y position, the distance between the CTB and the rail, \
                         specified in meters from world frame, recommend values in the range of (0.6, 0.95), \
-                        ignored if randomize_ctb_x is true"
+                        ignored if randomize_ctb_x is true",
         )
     )
 
@@ -179,7 +179,7 @@ def generate_launch_description():
     clr_mujoco_description_file = "clr_mujoco_xacro.urdf"
 
     def generate_mjcf_description_and_node(context):
-        
+
         ctb_orientation_randomized = randomize_ctb_orientation.perform(context)
         ctb_x_randomized = randomize_ctb_x.perform(context)
         ctb_y_randomized = randomize_ctb_y.perform(context)
@@ -189,12 +189,12 @@ def generate_launch_description():
         else:
             ctb_rot_z = ctb_z_rotation.perform(context)
         if ctb_x_randomized.lower() == "true":
-            ctb_x = random.uniform(0.1,1.4)
+            ctb_x = random.uniform(0.1, 1.4)
             print(f"CTB X Position is randomized \n\t CTB X Position:{ctb_x} (m)")
         else:
             ctb_x = ctb_x_position.perform(context)
         if ctb_y_randomized.lower() == "true":
-            ctb_y = random.uniform(0.6,0.95)
+            ctb_y = random.uniform(0.6, 0.95)
             print(f"CTB Y Position is randomized \n\t CTB Y Position:{ctb_y} (m)")
         else:
             ctb_y = ctb_y_position.perform(context)
@@ -221,7 +221,7 @@ def generate_launch_description():
         tmp.close()
 
         # Ensure the file gets deleted
-        def cleanup(event, context): 
+        def cleanup(event, context):
             if os.path.exists(tmp.name):
                 os.remove(tmp.name)
 
