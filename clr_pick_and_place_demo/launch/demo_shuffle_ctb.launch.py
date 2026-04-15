@@ -207,7 +207,7 @@ def generate_launch_description():
                 " add_grasp_push_frames:=false",
                 " model_env:=true",
                 " include_scene_objects:=true",
-                " ctb_orientation:=",
+                " ctb_orientation_deg:=",
                 str(ctb_rot_z),
                 " ctb_position_x:=",
                 str(ctb_x),
