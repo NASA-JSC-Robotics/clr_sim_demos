@@ -1,5 +1,8 @@
 # CLR Sim Demos
 
+> [!NOTE]
+> This project has been merged directly into [clr_ws](https://github.com/NASA-JSC-Robotics/clr_ws) and is no longer maintained.
+
 This repository contains demonstration applications using the [MuJoCo simulation](https://github.com/NASA-JSC-Robotics/chonkur_l_raile/) of ChonkUR L Rail-E.
 
 This project is intended to be included in an application workspace such as the [clr_ws](https://github.com/NASA-JSC-Robotics/clr_ws/) repository.
